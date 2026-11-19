@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#020612" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>Game Launcher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .fundo-launcher {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background-image:
+        linear-gradient(to bottom, rgba(2, 6, 18, 0.55) 0%, rgba(2, 6, 18, 0.35) 50%, rgba(2, 6, 18, 0.65) 100%),
+        url("https://tl.ctcdn.com.br/KLobHSRTtTkxqB0WxUJ19PZvLtY=/1200x675/smart/filters:format(webp):quality(85)/a744cfcb-7c1c-46e3-8745-299098b60617.jpeg");
+      background-position: center center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      filter: blur(2px);
+      transform: scale(1.03);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 30px;
+      z-index: 10;
+    }
+
+    .topo-esquerda {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-topo {
+      background: rgba(2, 6, 18, 0.65);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 10px;
+      height: 38px;
+      padding: 0 12px;
+      font-size: 1.05rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-topo:hover,
+    .btn-topo:active {
+      background: rgba(0, 229, 255, 0.28);
+      border-color: #00e5ff;
+      transform: scale(1.06);
+    }
+
+    #titulo-jogo {
+      font-size: 1.35rem;
+      font-weight: 500;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+    }
+
+    .info-topo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1rem;
+    }
+
+    #status-controle {
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(2, 6, 18, 0.72);
+      color: #cbd5e1;
+      transition: all 0.2s;
+    }
+
+    #status-controle.ativo {
+      background: rgba(0, 229, 255, 0.25);
+      color: #00e5ff;
+    }
+
+    .carrossel {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      padding: 0 43vw;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      flex: 1;
+      z-index: 10;
+    }
+    .carrossel::-webkit-scrollbar { display: none; }
+
+    .card {
+      flex: 0 0 auto;
+      width: 165px;
+      height: 245px;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 4px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      opacity: 1;
+    }
+
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      opacity: 1;
+    }
+
+    .card.selecionado {
+      transform: scale(1.1);
+      border-color: #ffffff;
+      box-shadow: 0 0 25px rgba(255,255,255,0.75);
+      opacity: 1;
+    }
+
+    @media (max-height: 500px) {
+      header { padding: 10px 22px; }
+      .card { width: 120px; height: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="fundo-launcher"></div>
+
+  <header>
+    <div class="topo-esquerda">
+      <button class="btn-topo" title="Voltar ao início" onclick="selecionar(0)">🏠</button>
+      <button class="btn-topo" title="Tela cheia e horizontal" onclick="ativarTelaCheia()">⛶</button>
+      <div id="titulo-jogo">Sem jogos cadastrados</div>
+    </div>
+    <div class="info-topo">
+      <span id="status-controle">🎮 Aperte um botão</span>
+      <span id="relogio">00:00</span>
+    </div>
+  </header>
+
+  <div class="carrossel" id="lista-jogos"></div>
+  <div style="height: 24px;"></div>
+
+  <script>
+    // =========================================================================
+    // COLOQUE SEUS JOGOS AQUI DENTRO
+    // =========================================================================
+    const JOGOS = [
+      {
+        nome: "MIDNIGHT CLUB",
+        capa: "https://cdn2.steamgriddb.com/thumb/35e12a7da10a833329ade618940bc590.jpg",
+        link: "https://www.crazygames.com/br/game/nightclub-drift-speed"
+      },
+      {
+        nome: "MOTO GP 18",
+        capa: "https://cdn2.steamgriddb.com/thumb/7209375983416cef4eb2d1007716ce7e.jpg",
+        link: "https://www.crazygames.com/br/game/super-bike-the-champion"
+      },
+      {
+        nome: "DRAGON BALL BUDOKAI 3",
+        capa: "https://cdn2.steamgriddb.com/thumb/eef54151a72ee0c2d5d7f0931e16fe2d.jpg",
+        link: "https://dragonballbudokai3.gamingretro.online/"
+      },
+      {
+        nome: "STREET FIGHTER II III",
+        capa: "https://cdn2.steamgriddb.com/thumb/841c95b2ce6c0796f750096d847afd9e.png",
+        link: "https://streetfighteranniversary.gamingretro.online/"
+      },
+      {
+        nome: "MINECRAFT",
+        capa: "https://cdn2.steamgriddb.com/thumb/7344bcd24a4a0393f45cad1a212c62e7.jpg",
+        link: "https://www.crazygames.com/br/game/bloxdhop-io"
+      },
+      {
+        nome: "HEL SPIKE",
+        capa: "https://cdn2.steamgriddb.com/thumb/a5ddac22bc8e7fd214338451ae0f6277.jpg",
+        link: "https://www.crazygames.com/br/game/hellspike"
+      },
+      {
+        nome: "AMNESIA",
+        capa: "https://cdn2.steamgriddb.com/thumb/00edca0eac577434ebe1b76715e828ec.jpg",
+        link: "https://agentcube.github.io/amnesia-web-wasm/"
+      },
+      {
+        nome: "FIFA STREET",
+        capa: "https://cdn2.steamgriddb.com/thumb/a529aeb0aeafdbec051e7c1c9132e1a1.jpg",
+        link: "https://fifastreet2012.gamingretro.online/"
+      },
+      {
+        nome: "COD BLACK OPS",
+        capa: "https://cdn2.steamgriddb.com/thumb/afb0cc6d82c62d812d7ea9fa21d44831.png",
+        link: "https://vel.gg/bsz"
+      },
+      {
+        nome: "ZELDA OCARINA OF TIME",
+        capa: "https://cdn2.steamgriddb.com/thumb/ab6fe89d793b5a3c4153692779cb0680.jpg",
+        link: "https://linksarena.pages.dev/"
+      },
+      {
+        nome: "HOLLOW KNIGHT",
+        capa: "https://cdn2.steamgriddb.com/thumb/a5a0c5ac425e42b153a40f2395a98acb.jpg",
+        link: "https://truffled.lol/iframe.html?url=/games/newesthk/index.html"
+      },
+      {
+        nome: "PEAK",
+        capa: "https://cdn2.steamgriddb.com/thumb/53b9019c471e82a0fa911d7f594a41b0.jpg",
+        link: "https://wasm.rip/files/peak/PEAK.html"
+      },
+      {
+        nome: "BALATRO",
+        capa: "https://cdn2.steamgriddb.com/thumb/7a2b7a52ddc81967c7cd403bc96b1acd.jpg",
+        link: "https://truffled.lol/iframe.html?url=/games/balatro/index.html"
+      },
+      {
+        nome: "MARIO 64",
+        capa: "https://cdn2.steamgriddb.com/thumb/f6688fcc298d6dee5c1898e2b090621c.jpg",
+        link: "https://olivers.tools/?play"
+      },
+      {
+        nome: "SKATE 3",
+        capa: "https://cdn2.steamgriddb.com/thumb/69ca8f0f8fd6572165bbedc3ac5c1427.jpg",
+        link: "https://skate.aaddpp.lol/"
+      },
+      {
+        nome: "BLOCK PARCOUR",
+        capa: "https://cdn.now.gg/apps-content/com.nowgg.h5.pub483.app51039/game-tiles/parkour-block-3d.jpg",
+        link: "https://www.crazygames.com/br/game/blocky-parkour-only-up-adventure"
+      }
+    ];
+
+    // =========================================================================
+    // MOTOR DO LAUNCHER + SOM DE NAVEGAÇÃO + TELA CHEIA
+    // =========================================================================
+    const listaEl = document.getElementById('lista-jogos');
+    const tituloEl = document.getElementById('titulo-jogo');
+    const statusEl = document.getElementById('status-controle');
+    let atual = 0;
+    let cards = [];
+    let telaCheiaAtivada = false;
+    let audioCtx = null;
+
+    function tocarSomTecla() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const agora = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, agora);
+        osc.frequency.exponentialRampToValueAtTime(760, agora + 0.045);
+
+        gain.gain.setValueAtTime(0.08, agora);
+        gain.gain.exponentialRampToValueAtTime(0.001, agora + 0.05);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(agora);
+        osc.stop(agora + 0.055);
+      } catch (e) {}
+    }
+
+    async function ativarTelaCheia() {
+      try {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (el.requestFullscreen) {
+            await el.requestFullscreen({ navigationUI: "hide" });
+          } else if (el.webkitRequestFullscreen) {
+            await el.webkitRequestFullscreen();
+          }
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape").catch(() => {});
+        }
+        telaCheiaAtivada = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      } catch (e) {}
+    }
+
+    function noPrimeiroToque() {
+      if (telaCheiaAtivada) return;
+      ativarTelaCheia();
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        document.removeEventListener('pointerdown', noPrimeiroToque);
+        document.removeEventListener('touchstart', noPrimeiroToque);
+      }
+    }
+
+    document.addEventListener('pointerdown', noPrimeiroToque, { passive: true });
+    document.addEventListener('touchstart', noPrimeiroToque, { passive: true });
+
+    document.addEventListener('fullscreenchange', () => {
+      telaCheiaAtivada = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    });
+
+    function atualizarRelogio() {
+      const d = new Date();
+      document.getElementById('relogio').textContent =
+        String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    setInterval(atualizarRelogio, 1000);
+    atualizarRelogio();
+
+    JOGOS.forEach((jogo, i) => {
+      const div = document.createElement('div');
+      div.className = 'card' + (i === 0 ? ' selecionado' : '');
+      div.innerHTML = `<img src="${jogo.capa}" alt="${jogo.nome}">`;
+      div.onclick = () => {
+        ativarTelaCheia();
+        if (atual === i) abrirJogo(i);
+        else selecionar(i, true);
+      };
+      listaEl.appendChild(div);
+    });
+    cards = document.querySelectorAll('.card');
+    if (JOGOS[0]) tituloEl.textContent = JOGOS[0].nome;
+
+    function selecionar(i, comSom = true) {
+      if (cards.length === 0) return;
+      cards[atual].classList.remove('selecionado');
+      atual = (i + cards.length) % cards.length;
+      cards[atual].classList.add('selecionado');
+      tituloEl.textContent = JOGOS[atual].nome;
+      cards[atual].scrollIntoView({ behavior: 'smooth', inline: 'center' });
+      if (comSom) tocarSomTecla();
+    }
+
+    function abrirJogo(i) {
+      if (!JOGOS[i]) return;
+      window.location.href = JOGOS[i].link;
+    }
+
+    function setControleAtivo(ativo) {
+      if (ativo) {
+        statusEl.textContent = "🎮 Conectado";
+        statusEl.classList.add('ativo');
+      } else {
+        statusEl.textContent = "🎮 Aperte um botão";
+        statusEl.classList.remove('ativo');
+      }
+    }
+
+    let ultimoMov = 0, travaBtn = false;
+
+    window.addEventListener("gamepadconnected", () => setControleAtivo(true));
+    window.addEventListener("gamepaddisconnected", () => setControleAtivo(false));
+
+    function obterControleAtivo() {
+      if (!navigator.getGamepads) return null;
+      const lista = navigator.getGamepads();
+      for (let i = 0; i < lista.length; i++) {
+        if (lista[i]) return lista[i];
+      }
+      return null;
+    }
+
+    function lerControle() {
+      const gp = obterControleAtivo();
+      if (gp) {
+        const temSinal =
+          gp.buttons.some(b => b && b.pressed) ||
+          gp.axes.some(a => Math.abs(a) > 0.35);
+
+        if (temSinal) {
+          setControleAtivo(true);
+        }
+
+        if (cards.length > 0) {
+          const agora = Date.now();
+          const direita = Boolean(gp.buttons[15]?.pressed) || (gp.axes[0] !== undefined && gp.axes[0] > 0.55);
+          const esquerda = Boolean(gp.buttons[14]?.pressed) || (gp.axes[0] !== undefined && gp.axes[0] < -0.55);
+          const confirmar = Boolean(gp.buttons[0]?.pressed);
+
+          if (agora - ultimoMov > 180) {
+            if (direita) { selecionar(atual + 1, true); ultimoMov = agora; }
+            else if (esquerda) { selecionar(atual - 1, true); ultimoMov = agora; }
+          }
+
+          if (confirmar && !travaBtn) {
+            travaBtn = true;
+            abrirJogo(atual);
+          } else if (!confirmar) {
+            travaBtn = false;
+          }
+        }
+      }
+      requestAnimationFrame(lerControle);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (cards.length === 0) return;
+      if (e.key === 'ArrowRight') selecionar(atual + 1, true);
+      if (e.key === 'ArrowLeft') selecionar(atual - 1, true);
+      if (e.key === 'Enter') abrirJogo(atual);
+    });
+
+    if (cards.length > 0) setTimeout(() => selecionar(0, false), 50);
+    requestAnimationFrame(lerControle);
+  </script>
+</body>
+</html>
